@@ -23,7 +23,7 @@ pub use serialisation::WireMsg;
 pub enum MessageType {
     Ping,
     InfrastructureQuery(infrastructure::Query),
-    ClientMessage(client::MsgEnvelope),
+    ClientMessage(client::Message),
     NodeMessage(node::NodeMessage),
 }
 
