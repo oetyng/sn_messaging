@@ -10,12 +10,16 @@
 pub mod client;
 mod errors;
 pub mod infrastructure;
+pub mod location;
 pub mod node;
 mod serialisation;
 
+pub use self::{
+    errors::{Error, Result},
+    location::{DstLocation, SrcLocation, User},
+    serialisation::WireMsg,
+};
 use bytes::Bytes;
-pub use errors::{Error, Result};
-pub use serialisation::WireMsg;
 
 /// Type of message
 #[derive(PartialEq, Debug)]
