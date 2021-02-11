@@ -13,8 +13,6 @@ mod data;
 mod duty;
 mod errors;
 mod map;
-mod msg_id;
-mod network;
 mod query;
 mod sender;
 mod sequence;
@@ -27,20 +25,13 @@ pub use self::{
     duty::{AdultDuties, Duty, ElderDuties, NodeDuties},
     errors::{Error, ErrorDebug, Result},
     map::{MapRead, MapWrite},
-    msg_id::MessageId,
-    network::{
-        NodeCmd, NodeCmdError, NodeDataCmd, NodeDataError, NodeDataQuery, NodeDataQueryResponse,
-        NodeEvent, NodeQuery, NodeQueryResponse, NodeRewardError, NodeRewardQuery,
-        NodeRewardQueryResponse, NodeSystemCmd, NodeTransferCmd, NodeTransferError,
-        NodeTransferQuery, NodeTransferQueryResponse,
-    },
     query::Query,
     sender::{Address, MsgSender, TransientElderKey, TransientSectionKey},
     sequence::{SequenceRead, SequenceWrite},
     transfer::{TransferCmd, TransferQuery},
 };
 
-use crate::{MessageType, SrcLocation, WireMsg};
+use crate::{MessageId, MessageType, SrcLocation, WireMsg};
 use bytes::Bytes;
 use serde::{Deserialize, Serialize};
 use sn_data_types::{
@@ -55,33 +46,10 @@ use std::{
     fmt,
 };
 
-/// Message envelope containing a Safe message payload,
-/// This struct also provides utilities to obtain the serialized bytes
-/// ready to send them over the wire.
-impl Message {
-    /// Convinience function to deserialize a 'Message' from bytes received over the wire.
-    /// It returns an error if the bytes don't correspond to a client message.
-    pub fn from(bytes: Bytes) -> crate::Result<Self> {
-        let deserialized = WireMsg::deserialize(bytes)?;
-        if let MessageType::ClientMessage(msg) = deserialized {
-            Ok(msg)
-        } else {
-            Err(crate::Error::FailedToParse(
-                "bytes as a client message".to_string(),
-            ))
-        }
-    }
-
-    /// serialize this Message into bytes ready to be sent over the wire.
-    pub fn serialize(&self) -> crate::Result<Bytes> {
-        WireMsg::serialize_client_msg(self)
-    }
-}
-
-///
+/// Client-to-Node comms back and forth
 #[allow(clippy::large_enum_variant)]
 #[derive(Debug, Eq, PartialEq, Clone, Serialize, Deserialize)]
-pub enum Message {
+pub enum ClientMessage {
     /// A Cmd is leads to a write / change of state.
     /// We expect them to be successful, and only return a msg
     /// if something went wrong.
@@ -129,54 +97,30 @@ pub enum Message {
         /// The sender of the causing cmd.
         cmd_origin: SrcLocation,
     },
-    /// Cmds only sent internally in the network.
-    NodeCmd {
-        /// NodeCmd.
-        cmd: NodeCmd,
-        /// Message ID.
-        id: MessageId,
-    },
-    /// An error of a NodeCmd.
-    NodeCmdError {
-        /// The error.
-        error: NodeCmdError,
-        /// Message ID.
-        id: MessageId,
-        /// ID of causing cmd.
-        correlation_id: MessageId,
-        /// The sender of the causing cmd.
-        cmd_origin: SrcLocation,
-    },
-    /// Events only sent internally in the network.
-    NodeEvent {
-        /// Request.
-        event: NodeEvent,
-        /// Message ID.
-        id: MessageId,
-        /// ID of causing cmd.
-        correlation_id: MessageId,
-    },
-    /// Queries is a read-only operation.
-    NodeQuery {
-        /// Query.
-        query: NodeQuery,
-        /// Message ID.
-        id: MessageId,
-    },
-    /// The response to a query, containing the query result.
-    NodeQueryResponse {
-        /// QueryResponse.
-        response: NodeQueryResponse,
-        /// Message ID.
-        id: MessageId,
-        /// ID of causing query.
-        correlation_id: MessageId,
-        /// The sender of the causing query.
-        query_origin: SrcLocation,
-    },
 }
 
-impl Message {
+/// Message envelope containing a Safe message payload,
+/// This struct also provides utilities to obtain the serialized bytes
+/// ready to send them over the wire.
+impl ClientMessage {
+    /// Convinience function to deserialize a 'Message' from bytes received over the wire.
+    /// It returns an error if the bytes don't correspond to a client message.
+    pub fn from(bytes: Bytes) -> crate::Result<Self> {
+        let deserialized = WireMsg::deserialize(bytes)?;
+        if let MessageType::ClientMessage(msg) = deserialized {
+            Ok(msg)
+        } else {
+            Err(crate::Error::FailedToParse(
+                "bytes as a client message".to_string(),
+            ))
+        }
+    }
+
+    /// serialize this Message into bytes ready to be sent over the wire.
+    pub fn serialize(&self) -> crate::Result<Bytes> {
+        WireMsg::serialize_client_msg(self)
+    }
+
     /// Gets the message ID.
     pub fn id(&self) -> MessageId {
         match self {
@@ -184,26 +128,14 @@ impl Message {
             | Self::Query { id, .. }
             | Self::Event { id, .. }
             | Self::QueryResponse { id, .. }
-            | Self::CmdError { id, .. }
-            | Self::NodeCmd { id, .. }
-            | Self::NodeEvent { id, .. }
-            | Self::NodeQuery { id, .. }
-            | Self::NodeCmdError { id, .. }
-            | Self::NodeQueryResponse { id, .. } => *id,
+            | Self::CmdError { id, .. } => *id,
         }
     }
+}
 
-    /// serialize this Message, ready for signing
-    pub fn serialize(&self) -> Result<Bytes> {
-        let payload_vec = rmp_serde::to_vec_named(&self).map_err(|err| {
-            Error::Serialization(format!(
-                "Could not serialize message payload (id: {}) with Msgpack: {}",
-                self.id(),
-                err
-            ))
-        })?;
-
-        Ok(Bytes::from(payload_vec))
+impl Into<crate::Message> for ClientMessage {
+    fn into(self) -> crate::Message {
+        crate::Message::Client(self)
     }
 }
 
@@ -575,14 +507,14 @@ mod tests {
 
         let random_xor = xor_name::XorName::random();
         let id = MessageId(random_xor);
-        let message = Message::Query {
+        let message = ClientMessage::Query {
             query: Query::Transfer(TransferQuery::GetBalance(pk)),
             id,
         };
 
         // test msgpack serialization
         let serialized = message.serialize()?;
-        let deserialized = Message::from(serialized)?;
+        let deserialized = ClientMessage::from(serialized)?;
         assert_eq!(deserialized, message);
 
         Ok(())

@@ -50,7 +50,7 @@ impl WireMsg {
     }
 
     /// Creates a new instance keeping a (serialized) copy of the client 'Message' message provided.
-    pub fn new_client_msg(msg: &client::Message) -> Result<WireMsg> {
+    pub fn new_client_msg(msg: &client::ClientMessage) -> Result<WireMsg> {
         let payload_vec = rmp_serde::to_vec_named(&msg).map_err(|err| {
             Error::Serialisation(format!(
                 "could not serialize client message payload (id: {}) with Msgpack: {}",
@@ -76,6 +76,21 @@ impl WireMsg {
 
         Ok(Self {
             header: WireMsgHeader::new(MessageKind::NodeMessage),
+            payload: Bytes::from(payload_vec),
+        })
+    }
+
+    /// Creates a new instance keeping a (serialized) copy of the node 'Message' message provided.
+    pub fn new_routing_msg(msg: &node::RoutingMessage) -> Result<WireMsg> {
+        let payload_vec = rmp_serde::to_vec_named(&msg).map_err(|err| {
+            Error::Serialisation(format!(
+                "could not serialize node message payload with Msgpack: {}",
+                err
+            ))
+        })?;
+
+        Ok(Self {
+            header: WireMsgHeader::new(MessageKind::RoutingMessage),
             payload: Bytes::from(payload_vec),
         })
     }
@@ -123,8 +138,8 @@ impl WireMsg {
                 Ok(MessageType::InfrastructureQuery(query))
             }
             MessageKind::ClientMessage => {
-                let client_msg: client::Message =
-                    rmp_serde::from_slice(&self.payload).map_err(|err| {
+                let client_msg: client::ClientMessage = rmp_serde::from_slice(&self.payload)
+                    .map_err(|err| {
                         Error::FailedToParse(format!(
                             "Client message payload as Msgpack: {:?}",
                             err
@@ -138,6 +153,16 @@ impl WireMsg {
                         Error::FailedToParse(format!("Node message payload as Msgpack: {:?}", err))
                     })?;
                 Ok(MessageType::NodeMessage(node_msg))
+            }
+            MessageKind::RoutingMessage => {
+                let node_msg: node::RoutingMessage =
+                    rmp_serde::from_slice(&self.payload).map_err(|err| {
+                        Error::FailedToParse(format!(
+                            "Routing message payload as Msgpack: {:?}",
+                            err
+                        ))
+                    })?;
+                Ok(MessageType::RoutingMessage(node_msg))
             }
         }
     }
@@ -159,7 +184,7 @@ impl WireMsg {
 
     /// Convenience function which creates a temporary WireMsg from the provided
     /// Message, returning the serialized WireMsg.
-    pub fn serialize_client_msg(msg: &client::Message) -> Result<Bytes> {
+    pub fn serialize_client_msg(msg: &client::ClientMessage) -> Result<Bytes> {
         Self::new_client_msg(msg)?.serialize()
     }
 
@@ -167,6 +192,12 @@ impl WireMsg {
     /// node::Messsage, returning the serialized WireMsg.
     pub fn serialize_node_msg(msg: &node::NodeMessage) -> Result<Bytes> {
         Self::new_node_msg(msg)?.serialize()
+    }
+
+    /// Convenience function which creates a temporary WireMsg from the provided
+    /// node::Messsage, returning the serialized WireMsg.
+    pub fn serialize_routing_msg(msg: &node::RoutingMessage) -> Result<Bytes> {
+        Self::new_routing_msg(msg)?.serialize()
     }
 
     // Private function which returns the bytes size of this WireMsg

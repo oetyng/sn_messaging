@@ -147,6 +147,7 @@ pub(crate) enum MessageKind {
     InfrastructureQuery,
     ClientMessage,
     NodeMessage,
+    RoutingMessage,
 }
 
 impl TryFrom<u8> for MessageKind {
@@ -158,6 +159,7 @@ impl TryFrom<u8> for MessageKind {
             1 => Ok(Self::InfrastructureQuery),
             2 => Ok(Self::ClientMessage),
             3 => Ok(Self::NodeMessage),
+            4 => Ok(Self::RoutingMessage),
             other => Err(Error::UnsupportedMessageKind(other)),
         }
     }
@@ -170,6 +172,7 @@ impl From<MessageKind> for u8 {
             MessageKind::InfrastructureQuery => 1,
             MessageKind::ClientMessage => 2,
             MessageKind::NodeMessage => 3,
+            MessageKind::RoutingMessage => 4,
         }
     }
 }
@@ -186,6 +189,7 @@ mod tests {
             (MessageKind::InfrastructureQuery, 1),
             (MessageKind::ClientMessage, 2),
             (MessageKind::NodeMessage, 3),
+            (MessageKind::RoutingMessage, 4),
         ] {
             assert_eq!(kind as u8, byte);
             assert_eq!(MessageKind::try_from(byte)?, kind);

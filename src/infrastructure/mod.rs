@@ -14,7 +14,7 @@ use threshold_crypto::PublicKey;
 use xor_name::{Prefix, XorName};
 
 /// Message to query the network infrastructure.
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub enum Query {
     /// Message to request information about the section that matches the given name.
     GetSectionRequest(XorName),
@@ -23,7 +23,7 @@ pub enum Query {
 }
 
 /// Information about a section.
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub enum GetSectionResponse {
     /// Successful response to `GetSectionRequest`. Contains information about the requested
     /// section.
