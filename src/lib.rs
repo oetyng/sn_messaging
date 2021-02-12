@@ -18,7 +18,7 @@ mod serialisation;
 pub use self::{
     client::ClientMessage,
     errors::{Error, Result},
-    location::{DstLocation, SrcLocation, User},
+    location::{DstLocation, EndUser, SrcLocation},
     msg_id::MessageId,
     node::NodeMessage,
     serialisation::WireMsg,
