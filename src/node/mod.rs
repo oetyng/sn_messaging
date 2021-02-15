@@ -27,8 +27,6 @@ pub enum NodeMessage {
         cmd: NodeCmd,
         /// Message ID.
         id: MessageId,
-        /// Target section's current PublicKey
-        target_section_pk: Option<PublicKey>,
     },
     /// An error of a NodeCmd.
     NodeCmdError {
@@ -40,8 +38,6 @@ pub enum NodeMessage {
         correlation_id: MessageId,
         /// The sender of the causing cmd.
         cmd_origin: SrcLocation,
-        /// Target section's current PublicKey
-        target_section_pk: Option<PublicKey>,
     },
     /// Events only sent internally in the network.
     NodeEvent {
@@ -51,8 +47,6 @@ pub enum NodeMessage {
         id: MessageId,
         /// ID of causing cmd.
         correlation_id: MessageId,
-        /// Target section's current PublicKey
-        target_section_pk: Option<PublicKey>,
     },
     /// Queries is a read-only operation.
     NodeQuery {
@@ -60,8 +54,6 @@ pub enum NodeMessage {
         query: NodeQuery,
         /// Message ID.
         id: MessageId,
-        /// Target section's current PublicKey
-        target_section_pk: Option<PublicKey>,
     },
     /// The response to a query, containing the query result.
     NodeQueryResponse {
@@ -73,8 +65,6 @@ pub enum NodeMessage {
         correlation_id: MessageId,
         /// The sender of the causing query.
         query_origin: SrcLocation,
-        /// Target section's current PublicKey
-        target_section_pk: Option<PublicKey>,
     },
 }
 
