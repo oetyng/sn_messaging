@@ -7,7 +7,7 @@
 // specific language governing permissions and limitations relating to use of the SAFE Network
 // Software.
 
-use super::{data::DataCmd, transfer::TransferCmd, AuthorisationKind};
+use super::{data::DataCmd, transfer::TransferCmd, GPMGroupCmd, GroupId};
 use serde::{Deserialize, Serialize};
 use sn_data_types::TransferAgreementProof;
 use xor_name::XorName;
@@ -25,24 +25,20 @@ pub enum Cmd {
     },
     /// Command for transfering safe network tokens
     Transfer(TransferCmd),
+    Messaging {
+        dst: GroupId,
+        cmd: GPMGroupCmd,
+    },
 }
 
 impl Cmd {
-    /// Returns the type of authorisation needed for the cuest.
-    pub fn authorisation_kind(&self) -> AuthorisationKind {
-        use Cmd::*;
-        match self {
-            Data { cmd, .. } => cmd.authorisation_kind(),
-            Transfer(c) => c.authorisation_kind(),
-        }
-    }
-
     /// Returns the address of the destination for `cuest`.
     pub fn dst_address(&self) -> XorName {
         use Cmd::*;
         match self {
             Data { cmd, .. } => cmd.dst_address(),
             Transfer(c) => c.dst_address(),
+            Messaging { dst, .. } => *dst,
         }
     }
 }

@@ -13,6 +13,7 @@ mod data;
 mod duty;
 mod errors;
 mod map;
+mod messaging;
 mod network;
 mod query;
 mod sender;
@@ -26,6 +27,7 @@ pub use self::{
     duty::{AdultDuties, Duty, ElderDuties, NodeDuties},
     errors::{Error, ErrorDebug, Result},
     map::{MapRead, MapWrite},
+    messaging::*,
     network::{
         NodeCmd, NodeCmdError, NodeDataError, NodeDataQueryResponse, NodeEvent, NodeQuery,
         NodeQueryResponse, NodeRewardQuery, NodeSystemCmd, NodeSystemQuery,
@@ -264,6 +266,15 @@ pub enum TransferError {
 #[allow(clippy::large_enum_variant, clippy::type_complexity)]
 #[derive(Debug, Eq, PartialEq, Clone, Serialize, Deserialize)]
 pub enum Event {
+    Transfers(TransferEvent),
+    Messaging(MsgReceived),
+}
+
+/// Transfer events from the network that
+/// are pushed to the client.
+#[allow(clippy::large_enum_variant, clippy::type_complexity)]
+#[derive(Debug, Eq, PartialEq, Clone, Serialize, Deserialize)]
+pub enum TransferEvent {
     /// The transfer was validated by a Replica instance.
     TransferValidated {
         /// This is the validation of the transfer
@@ -337,6 +348,11 @@ pub enum QueryResponse {
     GetHistory(Result<ActorHistory>),
     /// Get Store Cost.
     GetStoreCost(Result<Token>),
+    //
+    // ===== Messaging =====
+    //
+    /// Get group config.
+    GetGroupConfig(Result<GroupConfig>),
 }
 
 /// The kind of authorisation needed for a request.
@@ -486,6 +502,9 @@ impl fmt::Debug for QueryResponse {
             GetBalance(res) => write!(f, "QueryResponse::GetBalance({:?})", ErrorDebug(res)),
             GetHistory(res) => write!(f, "QueryResponse::GetHistory({:?})", ErrorDebug(res)),
             GetStoreCost(res) => write!(f, "QueryResponse::GetStoreCost({:?})", ErrorDebug(res)),
+            GetGroupConfig(res) => {
+                write!(f, "QueryResponse::GetGroupConfig({:?})", ErrorDebug(res))
+            }
         }
     }
 }
