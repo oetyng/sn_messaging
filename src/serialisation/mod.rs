@@ -13,10 +13,10 @@ use self::wire_msg_header::{MessageKind, WireMsgHeader};
 #[cfg(not(feature = "client-only"))]
 use super::node;
 use super::{client, section_info, DestInfo, Error, MessageId, MessageType, Result};
+use bls::PublicKey;
 use bytes::Bytes;
 use cookie_factory::{combinator::slice, gen_simple};
 use std::fmt::Debug;
-use threshold_crypto::PublicKey;
 use xor_name::XorName;
 
 // In order to send a message over the wire, it needs to be serialized
@@ -314,7 +314,7 @@ impl WireMsg {
 mod tests {
     use super::*;
     use anyhow::Result;
-    use threshold_crypto::SecretKey;
+    use bls::SecretKey;
     use xor_name::XorName;
 
     #[test]

@@ -7,9 +7,9 @@
 // specific language governing permissions and limitations relating to use of the SAFE Network
 // Software.
 
-use super::{data::DataCmd, transfer::TransferCmd};
+use super::data::DataCmd;
 use serde::{Deserialize, Serialize};
-use sn_data_types::TransferAgreementProof;
+use sn_dbc::MintRequest;
 use xor_name::XorName;
 
 /// Command messages for data or transfer operations
@@ -20,11 +20,9 @@ pub enum Cmd {
     Data {
         /// The data command struct itself
         cmd: DataCmd,
-        /// Proof of payment for the data command
-        payment: TransferAgreementProof,
+        /// Payment for the data command
+        payment: MintRequest,
     },
-    /// Command for transfering safe network tokens
-    Transfer(TransferCmd),
 }
 
 impl Cmd {
@@ -33,7 +31,6 @@ impl Cmd {
         use Cmd::*;
         match self {
             Data { cmd, .. } => cmd.dst_address(),
-            Transfer(c) => c.dst_address(),
         }
     }
 }

@@ -7,7 +7,7 @@
 // specific language governing permissions and limitations relating to use of the SAFE Network
 // Software.
 
-use super::{data::DataQuery, transfer::TransferQuery, Error, QueryResponse};
+use super::{data::DataQuery, Error, QueryResponse};
 use serde::{Deserialize, Serialize};
 use xor_name::XorName;
 
@@ -17,8 +17,13 @@ use xor_name::XorName;
 pub enum Query {
     ///
     Data(DataQuery),
-    ///
-    Transfer(TransferQuery),
+    /// Get the latest cost for writing given number of bytes to network.
+    GetStoreCost {
+        ///
+        bytes: u64,
+        /// The hash of the data.
+        data_name: XorName,
+    },
 }
 
 impl Query {
@@ -28,7 +33,7 @@ impl Query {
         use Query::*;
         match self {
             Data(q) => q.error(error),
-            Transfer(q) => q.error(error),
+            GetStoreCost { .. } => QueryResponse::GetStoreCost(Err(error)),
         }
     }
 
@@ -37,7 +42,7 @@ impl Query {
         use Query::*;
         match self {
             Data(q) => q.dst_address(),
-            Transfer(q) => q.dst_address(),
+            GetStoreCost { data_name, .. } => *data_name,
         }
     }
 }

@@ -22,9 +22,9 @@ pub use self::{
     msg_id::{MessageId, MESSAGE_ID_LEN},
     serialisation::WireMsg,
 };
+use bls::PublicKey;
 use bytes::Bytes;
 use serde::{Deserialize, Serialize};
-use threshold_crypto::PublicKey;
 use xor_name::XorName;
 
 /// Type of message.

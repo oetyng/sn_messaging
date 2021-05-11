@@ -9,12 +9,12 @@
 mod errors;
 
 use crate::{MessageId, MessageType, WireMsg};
+use bls::PublicKey as BlsPublicKey;
 use bytes::Bytes;
 pub use errors::Error;
 use serde::{Deserialize, Serialize};
-use sn_data_types::{PublicKey, ReplicaPublicKeySet};
+use sn_data_types::PublicKey;
 use std::{collections::BTreeMap, fmt, net::SocketAddr};
-use threshold_crypto::PublicKey as BlsPublicKey;
 use xor_name::{Prefix, XorName};
 
 /// Messages for exchanging network info, specifically on a target section for a msg.
@@ -35,7 +35,7 @@ pub struct SectionInfo {
     /// Prefix of the section.
     pub prefix: Prefix,
     /// Public key set of the section.
-    pub pk_set: ReplicaPublicKeySet,
+    pub pk_set: bls::PublicKeySet,
     /// Section elders.
     pub elders: BTreeMap<XorName, SocketAddr>,
     /// Whether the section is allowed to taking new joining node.

@@ -17,7 +17,6 @@ mod map;
 mod query;
 mod register;
 mod sequence;
-mod transfer;
 
 pub use self::{
     blob::{BlobRead, BlobWrite},
@@ -33,23 +32,22 @@ pub use self::{
     query::Query,
     register::{RegisterRead, RegisterWrite},
     sequence::{SequenceRead, SequenceWrite},
-    transfer::{TransferCmd, TransferQuery},
 };
 
 use crate::{MessageId, MessageType, WireMsg};
+use bls::PublicKey as BlsPublicKey;
 use bytes::Bytes;
 use serde::{Deserialize, Serialize};
 use sn_data_types::{
     register::{Entry, EntryHash, Permissions, Policy, Register},
-    ActorHistory, Blob, Map, MapEntries, MapPermissionSet, MapValue, MapValues, PublicKey,
-    Sequence, SequenceEntries, SequenceEntry, SequencePermissions, SequencePrivatePolicy,
-    SequencePublicPolicy, Signature, Token, TransferAgreementProof, TransferValidated,
+    Blob, Map, MapEntries, MapPermissionSet, MapValue, MapValues, PublicKey, Sequence,
+    SequenceEntries, SequenceEntry, SequencePermissions, SequencePrivatePolicy,
+    SequencePublicPolicy, Signature, Token,
 };
 use std::{
     collections::{BTreeMap, BTreeSet},
     convert::TryFrom,
 };
-use threshold_crypto::PublicKey as BlsPublicKey;
 use xor_name::XorName;
 
 /// Public key and signature provided by the client
@@ -309,23 +307,7 @@ pub enum TransferError {
 /// are pushed to the client.
 #[allow(clippy::large_enum_variant, clippy::type_complexity)]
 #[derive(Debug, Eq, PartialEq, Clone, Serialize, Deserialize)]
-pub enum Event {
-    /// The transfer was validated by a Replica instance.
-    TransferValidated {
-        /// This is the validation of the transfer
-        /// requested by the client for an account.
-        event: TransferValidated,
-    },
-    /// An aggregate event created client side
-    /// (for upper Client layers) out of a quorum of TransferValidated events.
-    /// This is a temporary variant, until
-    /// SignatureAccumulation has been broken out
-    /// to its own crate, and can be used at client.
-    TransferAgreementReached {
-        /// The accumulated proof.
-        proof: TransferAgreementProof,
-    },
-}
+pub enum Event {}
 
 /// Query responses from the network.
 #[allow(clippy::large_enum_variant, clippy::type_complexity)]
@@ -387,13 +369,8 @@ pub enum QueryResponse {
     GetRegisterUserPermissions(Result<Permissions>),
     //
     // ===== Tokens =====
-    //
-    /// Get key balance.
-    GetBalance(Result<Token>),
-    /// Get key transfer history.
-    GetHistory(Result<ActorHistory>),
-    /// Get Store Cost.
-    GetStoreCost(Result<(u64, Token, PublicKey)>),
+    /// Get Store Cost, return value; bytes, data name, store cost
+    GetStoreCost(Result<(u64, XorName, Token)>),
 }
 
 impl QueryResponse {
@@ -422,8 +399,6 @@ impl QueryResponse {
             ReadRegister(result) => result.is_ok(),
             GetRegisterPolicy(result) => result.is_ok(),
             GetRegisterUserPermissions(result) => result.is_ok(),
-            GetBalance(result) => result.is_ok(),
-            GetHistory(result) => result.is_ok(),
             GetStoreCost(result) => result.is_ok(),
         }
     }
@@ -477,8 +452,6 @@ try_from!(PublicKey, GetRegisterOwner);
 try_from!(BTreeSet<(EntryHash, Entry)>, ReadRegister);
 try_from!(Policy, GetRegisterPolicy);
 try_from!(Permissions, GetRegisterUserPermissions);
-try_from!(Token, GetBalance);
-try_from!(ActorHistory, GetHistory);
 
 #[cfg(test)]
 mod tests {
@@ -489,7 +462,7 @@ mod tests {
 
     fn gen_keypairs() -> Vec<Keypair> {
         let mut rng = rand::thread_rng();
-        let bls_secret_key = threshold_crypto::SecretKeySet::random(1, &mut rng);
+        let bls_secret_key = bls::SecretKeySet::random(1, &mut rng);
         vec![
             Keypair::new_ed25519(&mut rng),
             Keypair::new_bls_share(
@@ -521,16 +494,16 @@ mod tests {
         if let Some(keypair) = gen_keypairs().first() {
             let public_key = keypair.public_key();
             let signature = keypair.sign(b"the query");
-
+            let blob_address = BlobAddress::Public(XorName::random());
             let msg = ProcessMsg::Query {
+                query: Query::Data(DataQuery::Blob(BlobRead::Get(blob_address))),
                 id: MessageId::new(),
-                query: Query::Transfer(TransferQuery::GetBalance(public_key)),
                 client_signed: ClientSigned {
                     public_key,
                     signature,
                 },
             };
-            let random_addr = DataAddress::Blob(BlobAddress::Public(XorName::random()));
+            let random_addr = DataAddress::Blob(blob_address);
             let lazy_error =
                 msg.create_processing_error(Some(Error::DataNotFound(random_addr.clone())));
 
@@ -551,13 +524,13 @@ mod tests {
         if let Some(keypair) = gen_keypairs().first() {
             let public_key = keypair.public_key();
             let signature = keypair.sign(b"the query");
-
-            let random_addr = DataAddress::Blob(BlobAddress::Public(XorName::random()));
+            let blob_address = BlobAddress::Public(XorName::random());
+            let data_addr = DataAddress::Blob(blob_address);
             let errored_response = ProcessingError {
-                reason: Some(Error::DataNotFound(random_addr.clone())),
+                reason: Some(Error::DataNotFound(data_addr.clone())),
                 source_message: Some(ProcessMsg::Query {
+                    query: Query::Data(DataQuery::Blob(BlobRead::Get(blob_address))),
                     id: MessageId::new(),
-                    query: Query::Transfer(TransferQuery::GetBalance(public_key)),
                     client_signed: ClientSigned {
                         public_key,
                         signature,
@@ -569,7 +542,7 @@ mod tests {
             assert!(format!("{:?}", errored_response).contains("TransferQuery::GetBalance"));
             assert!(format!("{:?}", errored_response).contains("ProcessingError"));
             assert!(format!("{:?}", errored_response)
-                .contains(&format!("DataNotFound({:?})", random_addr)));
+                .contains(&format!("DataNotFound({:?})", data_addr)));
             Ok(())
         } else {
             Err(anyhow!("Could not generate public key"))
@@ -599,7 +572,7 @@ mod tests {
 
         let mut data = BTreeMap::new();
         let _ = data.insert(vec![1], vec![10]);
-        let owners = PublicKey::Bls(threshold_crypto::SecretKey::random().public_key());
+        let owners = PublicKey::Bls(bls::SecretKey::random().public_key());
         let m_data = Map::Unseq(UnseqMap::new_with_data(
             *i_data.name(),
             1,
@@ -626,10 +599,11 @@ mod tests {
         let public_key = keypair.public_key();
         let signature = keypair.sign(b"the query");
 
+        let address = sn_data_types::BlobAddress::Public(xor_name::XorName::random());
         let id = MessageId::new();
         let message = ClientMsg::Process(ProcessMsg::Query {
+            query: Query::Data(DataQuery::Blob(BlobRead::Get(address))),
             id,
-            query: Query::Transfer(TransferQuery::GetBalance(public_key)),
             client_signed: ClientSigned {
                 public_key,
                 signature,
@@ -638,7 +612,7 @@ mod tests {
 
         // test msgpack serialization
         let dest = XorName::random();
-        let dest_section_pk = threshold_crypto::SecretKey::random().public_key();
+        let dest_section_pk = bls::SecretKey::random().public_key();
         let serialized = message.serialize(dest, dest_section_pk)?;
         let deserialized = ClientMsg::from(serialized)?;
         assert_eq!(deserialized, message);
