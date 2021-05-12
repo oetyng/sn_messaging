@@ -286,21 +286,22 @@ impl ProcessMsg {
 }
 
 ///
-#[derive(Debug, Hash, Eq, PartialEq, Clone, Serialize, Deserialize)]
+#[derive(Debug, Eq, PartialEq, Clone, Serialize, Deserialize)]
 pub enum CmdError {
     ///
     Data(Error), // DataError enum for better differentiation?
     ///
-    Transfer(TransferError),
+    Payment(PaymentError),
 }
 
 ///
 #[derive(Debug, Hash, Eq, PartialEq, Clone, Serialize, Deserialize)]
-pub enum TransferError {
-    /// The error of a ValidateTransfer cmd.
-    TransferValidation(Error),
-    /// The error of a RegisterTransfer cmd.
-    TransferRegistration(Error),
+pub struct PaymentError(pub String);
+
+impl From<sn_dbc::Error> for PaymentError {
+    fn from(e: sn_dbc::Error) -> Self {
+        Self(e.to_string())
+    }
 }
 
 /// Events from the network that

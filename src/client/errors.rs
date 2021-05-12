@@ -107,26 +107,6 @@ pub enum Error {
     /// The amount would exceed the maximum value for `Token` (u64::MAX).
     #[error("The token amount would exceed the maximum value (u64::MAX)")]
     ExcessiveValue,
-    /// Transaction ID already exists.
-    #[error("Transaction Id already exists")]
-    TransactionIdExists,
-    /// Insufficient coins.
-    #[error("Insufficient balance to complete this operation")]
-    InsufficientBalance,
-    /// Inexistent balance.
-    // TODO: key/wallet/balance, what's our vocab here?
-    #[error("No such key exists")]
-    NoSuchBalance,
-    /// Inexistent sender balance.
-    #[error("No such sender key balance")]
-    NoSuchSender,
-    /// Inexistent recipient balance.
-    // TODO: this should not be possible
-    #[error("No such recipient key balance")]
-    NoSuchRecipient,
-    /// Coin balance already exists.
-    #[error("Key already exists")]
-    BalanceExists,
     /// Expected data size exceeded.
     #[error("Size of the structure exceeds the limit")]
     ExceededSize,
@@ -139,9 +119,6 @@ pub enum Error {
     /// Entry already exists. Contains the current entry Key.
     #[error("Entry already exists {0}")]
     EntryExists(u8),
-    /// Problem registering the payment at a node
-    #[error("Payment registration failed")]
-    PaymentFailed,
     /// Node failed to delete the requested data for some reason.
     #[error("Failed to delete requested data")]
     FailedToDelete,
