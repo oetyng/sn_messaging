@@ -371,7 +371,14 @@ pub enum QueryResponse {
     //
     // ===== Tokens =====
     /// Get Store Cost, return value; bytes, data name, store cost
-    GetStoreCost(Result<(u64, XorName, Token)>),
+    GetStoreCost(Result<StoreCost>),
+}
+
+#[derive(Eq, PartialEq, Clone, Serialize, Deserialize, Debug)]
+pub struct StoreCost {
+    pub bytes: u64,
+    pub data_name: XorName,
+    pub payable: BTreeMap<PublicKey, Token>,
 }
 
 impl QueryResponse {
