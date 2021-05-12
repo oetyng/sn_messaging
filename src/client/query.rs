@@ -19,8 +19,10 @@ pub enum Query {
     Data(DataQuery),
     /// Get the latest cost for writing given number of bytes to network.
     GetStoreCost {
-        ///
+        /// Number of bytes to write.
         bytes: u64,
+        /// Whether for mutable data or not.
+        mutable: bool,
         /// The hash of the data.
         data_name: XorName,
     },
