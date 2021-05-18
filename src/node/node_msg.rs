@@ -17,11 +17,11 @@ use crate::{
     },
     EndUser, MessageId, MessageType, WireMsg,
 };
+use bls::PublicKey as BlsPublicKey;
 use bytes::Bytes;
 use serde::{Deserialize, Serialize};
 use sn_data_types::{Blob, BlobAddress, NodeAge, PublicKey, SectionElders, Signature};
 use std::collections::BTreeMap;
-use threshold_crypto::PublicKey as BlsPublicKey;
 use xor_name::XorName;
 
 // -------------- Node Cmd Messages --------------

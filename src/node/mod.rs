@@ -10,15 +10,14 @@
 mod node_msg;
 
 use crate::{MessageType, WireMsg};
+use bls::PublicKey as BlsPublicKey;
 use bytes::Bytes;
 pub use node_msg::{
     NodeCmd, NodeCmdError, NodeDataError, NodeDataQueryResponse, NodeEvent, NodeMsg, NodeQuery,
-    NodeQueryResponse, NodeRewardQuery, NodeSystemCmd, NodeSystemQuery, NodeSystemQueryResponse,
-    NodeTransferCmd, NodeTransferError, NodeTransferQuery, NodeTransferQueryResponse,
+    NodeQueryResponse, NodeSystemCmd, NodeSystemQuery, NodeSystemQueryResponse, NodeTransferError,
 };
 use serde::{Deserialize, Serialize};
 use std::fmt::{self, Debug, Formatter};
-use threshold_crypto::PublicKey as BlsPublicKey;
 use xor_name::XorName;
 
 /// Node message sent over the network.
