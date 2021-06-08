@@ -185,7 +185,7 @@ impl WireMsgHeader {
         // and if the header size has the exact number of bytes to read a PublicKey from.
         // Once we move back to fixed-length header we won't need this check.
         let src_section_pk = if kind == MessageKind::Node
-            && HEADER_MIN_SIZE + HDR_SRC_PK_BYTES_LEN == header_size.into()
+            && HEADER_MIN_SIZE + HDR_SRC_PK_BYTES_LEN == header_size as usize
         {
             let mut src_pk_bytes = [0; HDR_SRC_PK_BYTES_LEN];
             src_pk_bytes[0..].copy_from_slice(&bytes[HDR_SRC_PK_BYTES_START..HDR_SRC_PK_BYTES_END]);

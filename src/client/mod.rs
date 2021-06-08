@@ -294,6 +294,18 @@ pub enum CmdError {
     Data(Error), // DataError enum for better differentiation?
     ///
     Transfer(TransferError),
+    ///
+    Payment(PaymentError),
+}
+
+///
+#[derive(Debug, Hash, Eq, PartialEq, Clone, Serialize, Deserialize)]
+pub struct PaymentError(pub String);
+
+impl From<sn_dbc::Error> for PaymentError {
+    fn from(e: sn_dbc::Error) -> Self {
+        Self(e.to_string())
+    }
 }
 
 ///
@@ -393,7 +405,18 @@ pub enum QueryResponse {
     /// Get key transfer history.
     GetHistory(Result<ActorHistory>),
     /// Get Store Cost.
-    GetStoreCost(Result<(u64, Token, PublicKey)>),
+    /// Get a quote for payment, with a guaranteed store cost.
+    GetStoreCost(Result<PaymentQuote>),
+}
+
+/// A given piece of data, which must match the name and bytes specified,
+/// is guaranteed to be accepted, if payment matching this quote
+/// is provided together with the quote.
+#[derive(Eq, PartialEq, Clone, Serialize, Deserialize, Debug)]
+pub struct PaymentQuote {
+    pub bytes: u64,
+    pub data_name: XorName,
+    pub payable: BTreeMap<PublicKey, Token>,
 }
 
 impl QueryResponse {
