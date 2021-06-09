@@ -39,12 +39,7 @@ pub use self::{
 use crate::{MessageId, MessageType, WireMsg};
 use bytes::Bytes;
 use serde::{Deserialize, Serialize};
-use sn_data_types::{
-    register::{Entry, EntryHash, Permissions, Policy, Register},
-    ActorHistory, Blob, Map, MapEntries, MapPermissionSet, MapValue, MapValues, PublicKey,
-    Sequence, SequenceEntries, SequenceEntry, SequencePermissions, SequencePrivatePolicy,
-    SequencePublicPolicy, Signature, Token, TransferAgreementProof, TransferValidated,
-};
+use sn_data_types::{ActorHistory, Blob, Map, MapEntries, MapPermissionSet, MapValue, MapValues, PublicKey, Sequence, SequenceEntries, SequenceEntry, SequencePermissions, SequencePrivatePolicy, SequencePublicPolicy, Signature, SignatureShare, Token, TransferAgreementProof, TransferValidated, register::{Entry, EntryHash, Permissions, Policy, Register}};
 use std::{
     collections::{BTreeMap, BTreeSet},
     convert::TryFrom,
@@ -417,6 +412,32 @@ pub struct PaymentQuote {
     pub bytes: u64,
     pub data_name: XorName,
     pub payable: BTreeMap<PublicKey, Token>,
+}
+
+
+#[derive(Eq, PartialEq, Clone, Serialize, Deserialize, Debug)]
+pub struct GuaranteedQuoteShare {
+    pub quote: PaymentQuote,
+    pub sig: SignatureShare,
+}
+
+
+#[derive(Eq, PartialEq, Clone, Serialize, Deserialize, Debug)]
+pub struct GuaranteedQuote {
+    pub quote: PaymentQuote,
+    pub sig: Signature,
+}
+
+/// The provided data must match the name and bytes specified
+/// in the quote. 
+/// Also the quote must be signed by a known section key (this is at DbcSection).
+/// It is then guaranteed to be accepted (at DataSection), if payment provided 
+/// matches the quote, and the dbcs are valid.
+#[derive(Eq, PartialEq, Clone, Serialize, Deserialize, Debug)]
+pub struct WriteRequest {
+    cmd: DataCmd,
+    quote: GuaranteedQuote,
+    payment: BTreeMap<PublicKey, sn_dbc::Dbc>,
 }
 
 impl QueryResponse {

@@ -7,9 +7,8 @@
 // specific language governing permissions and limitations relating to use of the SAFE Network
 // Software.
 
-use super::{data::DataCmd, transfer::TransferCmd};
+use super::{WriteRequest, transfer::TransferCmd};
 use serde::{Deserialize, Serialize};
-use sn_dbc::ReissueRequest;
 use xor_name::XorName;
 
 /// Command messages for data or transfer operations
@@ -17,12 +16,7 @@ use xor_name::XorName;
 #[derive(Eq, PartialEq, Debug, Clone, Serialize, Deserialize)]
 pub enum Cmd {
     /// Commands for manipulating data
-    Data {
-        /// The data command struct itself
-        cmd: DataCmd,
-        /// Payment for the data command
-        payment: ReissueRequest,
-    },
+    Data(WriteRequest),
     Transfer(TransferCmd),
 }
 
@@ -31,7 +25,7 @@ impl Cmd {
     pub fn dst_address(&self) -> XorName {
         use Cmd::*;
         match self {
-            Data { cmd, .. } => cmd.dst_address(),
+            Data(req) => req.cmd.dst_address(),
             Transfer(c) => c.dst_address(),
         }
     }
